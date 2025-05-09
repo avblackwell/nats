@@ -14,25 +14,38 @@ const COLORS = {
   primary: '#2196F3',
   success: '#4CAF50',
   danger: '#ff4444',
-  text: {
-    primary: '#333333',
-    secondary: '#666666',
-    light: '#ffffff',
-  },
-  background: {
-    main: '#ffffff',
-    secondary: '#f9f9f9',
-    border: '#e0e0e0',
+  light: {
+    text: {
+      primary: '#333333',
+      secondary: '#666666',
+      light: '#ffffff',
+    },
+    background: {
+      main: '#ffffff',
+      secondary: '#f9f9f9',
+      border: '#e0e0e0',
+    },
+    input: {
+      background: '#ffffff',
+      border: '#e0e0e0',
+      text: '#333333',
+    }
   },
   dark: {
     text: {
       primary: '#ffffff',
       secondary: '#a0a0a0',
+      light: '#ffffff',
     },
     background: {
       main: '#1a1a1a',
       secondary: '#2d2d2d',
       border: '#404040',
+    },
+    input: {
+      background: '#2d2d2d',
+      border: '#404040',
+      text: '#ffffff',
     },
     message: {
       background: '#2d2d2d',
@@ -63,7 +76,6 @@ const TYPOGRAPHY = {
   },
   label: {
     fontSize: '14px',
-    color: COLORS.text.secondary,
     marginBottom: SPACING.xs,
   },
 };
@@ -83,15 +95,15 @@ const BUTTON_STYLES = {
   },
   primary: {
     backgroundColor: COLORS.primary,
-    color: COLORS.text.light,
+    color: COLORS.light.text.light,
   },
   success: {
     backgroundColor: COLORS.success,
-    color: COLORS.text.light,
+    color: COLORS.light.text.light,
   },
   danger: {
     backgroundColor: COLORS.danger,
-    color: COLORS.text.light,
+    color: COLORS.light.text.light,
   },
 };
 
@@ -101,8 +113,8 @@ const INPUT_STYLES = {
     padding: SPACING.sm,
     marginBottom: SPACING.md,
     borderRadius: '4px',
-    border: `1px solid ${COLORS.background.border}`,
     fontSize: '14px',
+    transition: 'border-color 0.2s',
     '&:focus': {
       outline: 'none',
       borderColor: COLORS.primary,
@@ -112,35 +124,80 @@ const INPUT_STYLES = {
 
 const CONTAINER_STYLES = {
   page: {
-    padding: SPACING.xl,
-    maxWidth: '1200px',
-    margin: '0 auto',
+    width: '100vw',
+    height: '100vh',
+    margin: 0,
+    transition: 'background-color 0.3s',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  section: {
-    marginBottom: SPACING.xl,
+  container: {
+    width: '100%',
+    maxWidth: '1400px',
+    height: '100%',
+    padding: SPACING.md,
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
   },
-  form: {
+  header: {
     marginBottom: SPACING.lg,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: `0 ${SPACING.md}`,
+  },
+  content: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: SPACING.lg,
+    padding: `0 ${SPACING.md}`,
+    minHeight: 0,
+  },
+  forms: {
+    display: 'flex',
+    gap: SPACING.lg,
+    flex: 1,
+    minHeight: 0,
+    '@media (max-width: 768px)': {
+      flexDirection: 'column',
+    },
+  },
+  formSection: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+    '@media (max-width: 768px)': {
+      minHeight: 'auto',
+    },
+  },
+  messageSection: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
   },
   messageList: {
-    border: `1px solid ${COLORS.dark.message.border}`,
+    flex: 1,
     padding: SPACING.md,
-    maxHeight: '300px',
     overflowY: 'auto',
-    backgroundColor: COLORS.dark.message.background,
     borderRadius: '4px',
+    minHeight: 0,
     '&::-webkit-scrollbar': {
       width: '8px',
     },
     '&::-webkit-scrollbar-track': {
-      background: COLORS.dark.background.main,
+      background: 'transparent',
     },
     '&::-webkit-scrollbar-thumb': {
-      background: COLORS.dark.message.border,
       borderRadius: '4px',
     },
     '&::-webkit-scrollbar-thumb:hover': {
-      background: COLORS.dark.text.secondary,
+      opacity: 0.8,
     },
   },
   messageItem: {
@@ -148,9 +205,6 @@ const CONTAINER_STYLES = {
     marginBottom: SPACING.xs,
     borderRadius: '4px',
     transition: 'background-color 0.2s',
-    '&:hover': {
-      backgroundColor: COLORS.dark.message.hover,
-    },
   },
 };
 
@@ -160,12 +214,62 @@ export default function NATS() {
   const [messages, setMessages] = useState([]);
   const [publishSubject, setPublishSubject] = useState("hello");
   const [publishMessage, setPublishMessage] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const subscriptionRef = useRef(null);
   const isSubscribedRef = useRef(false);
   const isConnectedRef = useRef(false);
 
-  // create a codec
   const sc = StringCodec();
+
+  const getThemeStyles = () => {
+    const theme = isDarkMode ? COLORS.dark : COLORS.light;
+    return {
+      page: {
+        ...CONTAINER_STYLES.page,
+        backgroundColor: theme.background.main,
+      },
+      container: {
+        ...CONTAINER_STYLES.container,
+        backgroundColor: theme.background.main,
+      },
+      input: {
+        ...INPUT_STYLES.base,
+        backgroundColor: theme.input.background,
+        border: `1px solid ${theme.input.border}`,
+        color: theme.input.text,
+        width: '100%',
+      },
+      messageList: {
+        ...CONTAINER_STYLES.messageList,
+        backgroundColor: isDarkMode ? COLORS.dark.message.background : theme.background.secondary,
+        border: `1px solid ${isDarkMode ? COLORS.dark.message.border : theme.background.border}`,
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: isDarkMode ? COLORS.dark.message.border : theme.background.border,
+        },
+      },
+      messageItem: {
+        ...CONTAINER_STYLES.messageItem,
+        '&:hover': {
+          backgroundColor: isDarkMode ? COLORS.dark.message.hover : theme.background.secondary,
+        },
+      },
+      label: {
+        ...TYPOGRAPHY.label,
+        color: theme.text.secondary,
+      },
+      heading: {
+        ...TYPOGRAPHY.h1,
+        color: theme.text.primary,
+      },
+      subheading: {
+        ...TYPOGRAPHY.h2,
+        color: theme.text.primary,
+      },
+    };
+  };
+
+  const styles = getThemeStyles();
 
   const handleConnect = async () => {
     if (isConnectedRef.current) {
@@ -203,6 +307,16 @@ export default function NATS() {
     return () => {
       handleDisconnect();
     };
+  }, []);
+
+  // Add resize listener
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleSubscribe = async (e) => {
@@ -262,115 +376,143 @@ export default function NATS() {
   }
 
   return (
-    <div style={CONTAINER_STYLES.page}>
-      <div style={CONTAINER_STYLES.section}>
-        {isConnectedRef.current ? (
-          <>
-            <h1 style={TYPOGRAPHY.h1}>Connected to {nats?.getServer()}</h1>
-            <button 
-              onClick={handleDisconnect}
-              style={{ ...BUTTON_STYLES.base, ...BUTTON_STYLES.danger }}
-            >
-              Disconnect
-            </button>
-          </>
-        ) : (
-          <>
-            <h1 style={TYPOGRAPHY.h1}>Not Connected to NATS</h1>
+    <div style={styles.page}>
+      <div style={styles.container}>
+        <div style={CONTAINER_STYLES.header}>
+          <div>
+            {isConnectedRef.current ? (
+              <h1 style={styles.heading}>Connected to {nats?.getServer()}</h1>
+            ) : (
+              <h1 style={styles.heading}>Not Connected to NATS</h1>
+            )}
+          </div>
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            style={{
+              ...BUTTON_STYLES.base,
+              backgroundColor: isDarkMode ? COLORS.dark.background.secondary : COLORS.light.background.secondary,
+              color: isDarkMode ? COLORS.dark.text.primary : COLORS.light.text.primary,
+              border: `1px solid ${isDarkMode ? COLORS.dark.background.border : COLORS.light.background.border}`,
+            }}
+          >
+            {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+          </button>
+        </div>
+
+        {!isConnectedRef.current && (
+          <div style={{ padding: `0 ${SPACING.md}` }}>
             <button 
               onClick={handleConnect}
               style={{ ...BUTTON_STYLES.base, ...BUTTON_STYLES.success }}
             >
               Connect to NATS
             </button>
-          </>
+          </div>
         )}
-      </div>
-      
-      {isConnectedRef.current && (
-        <div style={{ display: 'flex', gap: SPACING.xl }}>
-          <div style={{ flex: 1 }}>
-            <h2 style={TYPOGRAPHY.h2}>Subscribe</h2>
-            <form onSubmit={handleSubscribe} style={CONTAINER_STYLES.form}>
-              <label htmlFor="subject" style={TYPOGRAPHY.label}>Subscribe to subject:</label>
-              <input
-                type="text"
-                id="subject"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                style={INPUT_STYLES.base}
-              />
-              <div style={{ display: 'flex', gap: SPACING.sm }}>
-                <button 
-                  type="submit" 
-                  style={{ ...BUTTON_STYLES.base, ...BUTTON_STYLES.primary }}
-                >
-                  {isSubscribedRef.current ? 'Update Subscription' : 'Subscribe'}
-                </button>
-                {isSubscribedRef.current && (
+        
+        {isConnectedRef.current && (
+          <div style={CONTAINER_STYLES.content}>
+            <div style={{
+              ...CONTAINER_STYLES.forms,
+              flexDirection: isMobile ? 'column' : 'row',
+            }}>
+              <div style={{
+                ...CONTAINER_STYLES.formSection,
+                minHeight: isMobile ? 'auto' : undefined,
+              }}>
+                <h2 style={styles.subheading}>Subscribe</h2>
+                <form onSubmit={handleSubscribe} style={{
+                  ...CONTAINER_STYLES.form,
+                  marginBottom: isMobile ? SPACING.lg : 0,
+                }}>
+                  <label htmlFor="subject" style={styles.label}>Subscribe to subject:</label>
+                  <input
+                    type="text"
+                    id="subject"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    style={styles.input}
+                  />
+                  <div style={{ display: 'flex', gap: SPACING.sm }}>
+                    <button 
+                      type="submit" 
+                      style={{ ...BUTTON_STYLES.base, ...BUTTON_STYLES.primary }}
+                    >
+                      {isSubscribedRef.current ? 'Update Subscription' : 'Subscribe'}
+                    </button>
+                    {isSubscribedRef.current && (
+                      <button 
+                        type="button" 
+                        onClick={handleUnsubscribe}
+                        style={{ ...BUTTON_STYLES.base, ...BUTTON_STYLES.danger }}
+                      >
+                        Unsubscribe
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              <div style={{
+                ...CONTAINER_STYLES.formSection,
+                minHeight: isMobile ? 'auto' : undefined,
+              }}>
+                <h2 style={styles.subheading}>Publish</h2>
+                <form onSubmit={handlePublish} style={CONTAINER_STYLES.form}>
+                  <label htmlFor="publishSubject" style={styles.label}>Subject:</label>
+                  <input
+                    type="text"
+                    id="publishSubject"
+                    value={publishSubject}
+                    onChange={(e) => setPublishSubject(e.target.value)}
+                    style={styles.input}
+                  />
+                  <label htmlFor="publishMessage" style={styles.label}>Message:</label>
+                  <textarea
+                    id="publishMessage"
+                    value={publishMessage}
+                    onChange={(e) => setPublishMessage(e.target.value)}
+                    style={{ ...styles.input, minHeight: '100px' }}
+                    placeholder="Enter your message here..."
+                  />
                   <button 
-                    type="button" 
-                    onClick={handleUnsubscribe}
-                    style={{ ...BUTTON_STYLES.base, ...BUTTON_STYLES.danger }}
+                    type="submit" 
+                    style={{ ...BUTTON_STYLES.base, ...BUTTON_STYLES.primary }}
                   >
-                    Unsubscribe
+                    Publish Message
                   </button>
+                </form>
+              </div>
+            </div>
+
+            <div style={CONTAINER_STYLES.messageSection}>
+              <h2 style={styles.subheading}>Messages</h2>
+              <div style={styles.messageList}>
+                {messages.map((msg, index) => (
+                  <div key={index} style={styles.messageItem}>
+                    <span style={{ color: isDarkMode ? COLORS.dark.text.secondary : COLORS.light.text.secondary }}>
+                      <strong style={{ color: isDarkMode ? COLORS.dark.text.primary : COLORS.light.text.primary }}>
+                        {msg.timestamp}
+                      </strong>
+                      {' - '}
+                      <span style={{ color: COLORS.primary }}>{msg.subject}</span>
+                      {': '}
+                      <span style={{ color: isDarkMode ? COLORS.dark.text.primary : COLORS.light.text.primary }}>
+                        {msg.message}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+                {messages.length === 0 && (
+                  <div style={{ color: isDarkMode ? COLORS.dark.text.secondary : COLORS.light.text.secondary }}>
+                    No messages received yet...
+                  </div>
                 )}
               </div>
-            </form>
+            </div>
           </div>
-
-          <div style={{ flex: 1 }}>
-            <h2 style={TYPOGRAPHY.h2}>Publish</h2>
-            <form onSubmit={handlePublish} style={CONTAINER_STYLES.form}>
-              <label htmlFor="publishSubject" style={TYPOGRAPHY.label}>Subject:</label>
-              <input
-                type="text"
-                id="publishSubject"
-                value={publishSubject}
-                onChange={(e) => setPublishSubject(e.target.value)}
-                style={INPUT_STYLES.base}
-              />
-              <label htmlFor="publishMessage" style={TYPOGRAPHY.label}>Message:</label>
-              <textarea
-                id="publishMessage"
-                value={publishMessage}
-                onChange={(e) => setPublishMessage(e.target.value)}
-                style={{ ...INPUT_STYLES.base, minHeight: '100px' }}
-                placeholder="Enter your message here..."
-              />
-              <button 
-                type="submit" 
-                style={{ ...BUTTON_STYLES.base, ...BUTTON_STYLES.primary }}
-              >
-                Publish Message
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {isConnectedRef.current && (
-        <div style={CONTAINER_STYLES.section}>
-          <h2 style={{ ...TYPOGRAPHY.h2, color: COLORS.dark.text.primary }}>Messages</h2>
-          <div style={CONTAINER_STYLES.messageList}>
-            {messages.map((msg, index) => (
-              <div key={index} style={CONTAINER_STYLES.messageItem}>
-                <span style={{ color: COLORS.dark.text.secondary }}>
-                  <strong style={{ color: COLORS.dark.text.primary }}>{msg.timestamp}</strong>
-                  {' - '}
-                  <span style={{ color: COLORS.primary }}>{msg.subject}</span>
-                  {': '}
-                  <span style={{ color: COLORS.dark.text.primary }}>{msg.message}</span>
-                </span>
-              </div>
-            ))}
-            {messages.length === 0 && (
-              <div style={{ color: COLORS.dark.text.secondary }}>No messages received yet...</div>
-            )}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
